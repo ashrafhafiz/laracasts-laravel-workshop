@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Profile;
-use App\Models\Post;
-use App\Models\Like;
 use App\Models\Follow;
+use App\Models\Like;
+use App\Models\Post;
+use App\Models\Profile;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 

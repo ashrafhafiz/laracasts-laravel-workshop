@@ -3,31 +3,37 @@
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+Route::get('/', function (): Factory|View {
     return view('welcome');
 });
 
-Route::get('/dev/login', function () {
-    // $user = User::inRandomOrder()->first();
-    // $user = User::first('id', 5);
-    $user = User::whereId(5)->first();
+if (app()->isLocal()) {
+    Route::get('/dev/login', function () {
+        // $user = User::inRandomOrder()->first();
+        // $user = User::first('id', 5);
+        $user = User::whereId(5)->first();
 
-    Auth::login($user);
-    request()->session()->regenerate();
+        Auth::login($user);
+        request()->session()->regenerate();
 
-    return redirect()->intended(route('profiles.show', $user->profile));
-})->name('login');
+        return redirect()->intended(route('profiles.show', $user->profile));
+    })->name('login');
 
-Route::get('/dev/logout', function () {
-    Auth::logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
+    Route::get('/dev/logout', function (): Redirector|RedirectResponse {
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
 
-    return redirect('/feed');
-})->name('logout');
+        return redirect('/feed');
+    })->name('logout');
+}
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [PostController::class, 'index'])->name('posts.index');

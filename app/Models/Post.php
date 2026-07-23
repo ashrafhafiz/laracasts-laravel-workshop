@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['profile_id', 'parent_id', 'repost_of_id', 'content'])]
 class Post extends Model
 {
-    /** @use HasFactory<\Database\Factories\PostFactory> */
+    /** @use HasFactory<PostFactory> */
     use HasFactory;
 
     public function profile(): BelongsTo
@@ -55,33 +58,33 @@ class Post extends Model
             'profile_id' => $profile->id,
             'content' => $content,
             'parent_id' => null,
-            'repost_of_id' => null
+            'repost_of_id' => null,
         ]);
     }
 
-    public static function reply(Profile $replier, Post $originalPost, string $content): self
+    public static function reply(Profile $profile, Post $originalPost, string $content): self
     {
         return static::create([
-            'profile_id' => $replier->id,
+            'profile_id' => $profile->id,
             'content' => $content,
             'parent_id' => $originalPost->id,
-            'repost_of_id' => null
+            'repost_of_id' => null,
         ]);
     }
 
-    public static function repost(Profile $reposter, Post $originalPost, string $content = null): self
+    public static function repost(Profile $profile, Post $originalPost, ?string $content = null): self
     {
         return static::firstOrCreate([
-            'profile_id' => $reposter->id,
+            'profile_id' => $profile->id,
             'content' => $content,
             'parent_id' => null,
             'repost_of_id' => $originalPost->id,
         ]);
     }
 
-    public static function removeRepost(Post $originalPost, Profile $reposter)
+    public static function removeRepost(Post $originalPost, Profile $profile): bool
     {
-        return static::where('profile_id', $reposter->id)
+        return static::where('profile_id', $profile->id)
             ->where('repost_of_id', $originalPost->id)
             ->delete() > 0;
     }

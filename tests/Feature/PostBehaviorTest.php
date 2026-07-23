@@ -37,9 +37,9 @@ test('can reply to a reply', function () {
     $originalPost = Post::factory()->create();
     $replier = Profile::factory()->create();
     $reply = Post::reply($replier, $originalPost, 'Hello, world!');
-    $replyToReply = Post::reply($reply->profile, $reply, 'Hello, world!');
+    $post = Post::reply($reply->profile, $reply, 'Hello, world!');
 
-    expect($replyToReply->parent->is($reply))->toBeTrue()
+    expect($post->parent->is($reply))->toBeTrue()
         ->and($reply->parent->is($originalPost))->toBeTrue()
         ->and($originalPost->replies)->toHaveCount(1);
     expect($reply->parent->is($originalPost))->toBeTrue()
@@ -77,12 +77,12 @@ test('can create quoted repost', function () {
 test('prevent duplicate reposts', function () {
     $originalPost = Post::factory()->create();
     $reposter = Profile::factory()->create();
-    $repost1 = Post::repost($reposter, $originalPost);
+    $post = Post::repost($reposter, $originalPost);
     $repost2 = Post::repost($reposter, $originalPost);
 
-    expect($repost1->exists)->toBeTrue()
+    expect($post->exists)->toBeTrue()
         ->and($repost2->exists)->toBeTrue()
-        ->and($repost1->is($repost2))->toBeTrue();
+        ->and($post->is($repost2))->toBeTrue();
 });
 
 test('remove a repost', function () {

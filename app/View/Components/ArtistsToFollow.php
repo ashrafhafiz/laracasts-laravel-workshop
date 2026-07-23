@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\View\Components;
 
 use App\Models\Profile;
@@ -34,7 +36,7 @@ class ArtistsToFollow extends Component
         if (Auth::check()) {
             $profile = Auth::user()->profile;
 
-            $query = Profile::whereDoesntHave('followers', fn($q) => $q->where('follower_profile_id', $profile->id))
+            $query = Profile::whereDoesntHave('followers', fn ($q) => $q->where('follower_profile_id', $profile->id))
                 ->where('id', '!=', $profile->id);
         } else {
             $query = Profile::query();
@@ -42,6 +44,6 @@ class ArtistsToFollow extends Component
 
         $profiles = $query->inRandomOrder()->limit(4)->get();
 
-        return view('components.artists-to-follow', compact('profiles'));
+        return view('components.artists-to-follow', ['profiles' => $profiles]);
     }
 }

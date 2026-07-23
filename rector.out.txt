@@ -1,0 +1,905 @@
+> composer run format
+> php vendor/bin/rector
+ 29/29 [============================] 100%
+26 files with changes
+=====================
+
+1) app/Http/Controllers/Controller.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Http\Controllers;
+
+ abstract class Controller
+    ----------- end diff -----------
+
+Applied rules:
+ * SafeDeclareStrictTypesRector
+
+
+2) app/Http/Controllers/PostController.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Http\Controllers;
+
+ use App\Http\Requests\CreatePostRequest;
+@@ Line 12 @@
+
+ class PostController extends Controller
+ {
+-    public function index()
++    public function index(): \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     {
+         $profile = Auth::user()->profile;
+
+         $posts = TimelineQuery::forViewer($profile)->get();
+
+-        return view('posts.index', compact('profile', 'posts'));
++        return view('posts.index', ['profile' => $profile, 'posts' => $posts]);
+     }
+
+-    public function show(Profile $profile, Post $post)
++    public function show(Profile $profile, Post $post): \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     {
+         $post = PostThreadQuery::for($post, Auth::user()?->profile)->load();
+
+-        return view('posts.show', compact('post'));
++        return view('posts.show', ['post' => $post]);
+     }
+
+-    public function store(CreatePostRequest $request)
++    public function store(CreatePostRequest $createPostRequest)
+     {
+         $profile = Auth::user()->profile;
+-        $post = Post::publish($profile, $request->content);
++        Post::publish($profile, $createPostRequest->content);
+
+         return redirect()->route('posts.index');
+     }
+
+-    public function reply(Profile $profile, Post $post, CreatePostRequest $request)
++    public function reply(Profile $profile, Post $post, CreatePostRequest $createPostRequest)
+     {
+         $currentProfile = Auth::user()->profile;
+-        $post = Post::reply($currentProfile, $post, $request->content);
++        Post::reply($currentProfile, $post, $createPostRequest->content);
+
+         return redirect()->route('posts.index');
+     }
+@@ Line 47 @@
+     public function repost(Profile $profile, Post $post)
+     {
+         $currentProfile = Auth::user()->profile;
+-        $post = Post::repost($currentProfile, $post);
++        Post::repost($currentProfile, $post);
+
+         return redirect()->route('posts.index');
+     }
+
+-    public function quote(Profile $profile, Post $post, CreatePostRequest $request)
++    public function quote(Profile $profile, Post $post, CreatePostRequest $createPostRequest)
+     {
+         $currentProfile = Auth::user()->profile;
+-        $post = Post::repost($currentProfile, $post, $request->content);
++        Post::repost($currentProfile, $post, $createPostRequest->content);
+
+         return redirect()->route('posts.index');
+     }
+@@ Line 65 @@
+         $currentProfile = Auth::user()->profile;
+         $like = Like::createLike($currentProfile, $post);
+
+-        return response()->json(compact('like'));
++        return response()->json(['like' => $like]);
+     }
+
+     public function unlike(Profile $profile, Post $post)
+@@ Line 73 @@
+         $currentProfile = Auth::user()->profile;
+         $success = Like::removeLike($currentProfile, $post);
+
+-        return response()->json(compact('success'));
++        return response()->json(['success' => $success]);
+     }
+
+     public function destroy(Profile $profile, Post $post)
+@@ Line 84 @@
+         if ($currentProfile->id === $profile->id) {
+             $success = $post->delete() > 0;
+
+-            return response()->json(compact('success'));
++            return response()->json(['success' => $success]);
+         }
+
+         $repost = $post
+@@ Line 95 @@
+         if (! is_null($repost)) {
+             $success = $repost->delete() > 0;
+
+-            return response()->json(compact('success'));
++            return response()->json(['success' => $success]);
+         }
+
+         return redirect()->route('posts.index');
+    ----------- end diff -----------
+
+Applied rules:
+ * CompactToVariablesRector
+ * RemoveUnusedVariableAssignRector
+ * RenameParamToMatchTypeRector
+ * ReturnTypeFromStrictTypedCallRector
+ * DeclareStrictTypesRector
+
+
+3) app/Http/Controllers/ProfileController.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Http\Controllers;
+
+ use App\Models\Follow;
+@@ Line 10 @@
+
+ class ProfileController extends Controller
+ {
+-    public function show(Profile $profile)
++    public function show(Profile $profile): \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     {
+         $profile->loadCount(['followings', 'followers']);
+
+         $posts = ProfilePageQuery::for($profile, Auth::user()?->profile)->get();
+
+-        return view('profiles.show', compact('profile', 'posts'));
++        return view('profiles.show', ['profile' => $profile, 'posts' => $posts]);
+     }
+
+-    public function replies(Profile $profile)
++    public function replies(Profile $profile): \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     {
+         $profile->loadCount(['followers', 'followings']);
+
+         $posts = ProfileWithRepliesQuery::for($profile, Auth::user()?->profile)->get();
+
+-        return view('profiles.replies', compact('profile', 'posts'));
++        return view('profiles.replies', ['profile' => $profile, 'posts' => $posts]);
+     }
+
+     public function follow(Profile $profile)
+@@ Line 33 @@
+         $currentProfile = Auth::user()->profile;
+         $follow = Follow::createFollow($currentProfile, $profile);
+
+-        return response()->json(compact('follow'));
++        return response()->json(['follow' => $follow]);
+     }
+
+     public function unfollow(Profile $profile)
+@@ Line 41 @@
+         $currentProfile = Auth::user()->profile;
+         $success = Follow::removeFollow($currentProfile, $profile);
+
+-        return response()->json(compact('success'));
++        return response()->json(['success' => $success]);
+     }
+ }
+    ----------- end diff -----------
+
+Applied rules:
+ * CompactToVariablesRector
+ * ReturnTypeFromStrictTypedCallRector
+ * DeclareStrictTypesRector
+
+
+4) app/Http/Requests/CreatePostRequest.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Http\Requests;
+
+ use Illuminate\Contracts\Validation\ValidationRule;
+    ----------- end diff -----------
+
+Applied rules:
+ * DeclareStrictTypesRector
+
+
+5) app/Models/Follow.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Models;
+
+ use Database\Factories\FollowFactory;
+    ----------- end diff -----------
+
+Applied rules:
+ * DeclareStrictTypesRector
+
+
+6) app/Models/Like.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Models;
+
+ use Database\Factories\LikeFactory;
+@@ Line 32 @@
+         ]);
+     }
+
+-    public static function removeLike(Profile $profile, Post $post)
++    public static function removeLike(Profile $profile, Post $post): bool
+     {
+         return static::where('profile_id', $profile->id)
+             ->where('post_id', $post->id)
+    ----------- end diff -----------
+
+Applied rules:
+ * BoolReturnTypeFromBooleanStrictReturnsRector
+ * DeclareStrictTypesRector
+
+
+7) app/Models/Post.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Models;
+
+ use Database\Factories\PostFactory;
+@@ Line 60 @@
+         ]);
+     }
+
+-    public static function reply(Profile $replier, Post $originalPost, string $content): self
++    public static function reply(Profile $profile, Post $originalPost, string $content): self
+     {
+         return static::create([
+-            'profile_id' => $replier->id,
++            'profile_id' => $profile->id,
+             'content' => $content,
+             'parent_id' => $originalPost->id,
+             'repost_of_id' => null,
+@@ Line 70 @@
+         ]);
+     }
+
+-    public static function repost(Profile $reposter, Post $originalPost, ?string $content = null): self
++    public static function repost(Profile $profile, Post $originalPost, ?string $content = null): self
+     {
+         return static::firstOrCreate([
+-            'profile_id' => $reposter->id,
++            'profile_id' => $profile->id,
+             'content' => $content,
+             'parent_id' => null,
+             'repost_of_id' => $originalPost->id,
+@@ Line 80 @@
+         ]);
+     }
+
+-    public static function removeRepost(Post $originalPost, Profile $reposter)
++    public static function removeRepost(Post $originalPost, Profile $profile): bool
+     {
+-        return static::where('profile_id', $reposter->id)
++        return static::where('profile_id', $profile->id)
+             ->where('repost_of_id', $originalPost->id)
+             ->delete() > 0;
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * RenameParamToMatchTypeRector
+ * BoolReturnTypeFromBooleanStrictReturnsRector
+ * DeclareStrictTypesRector
+
+
+8) app/Models/Profile.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Models;
+
+ use Database\Factories\ProfileFactory;
+    ----------- end diff -----------
+
+Applied rules:
+ * DeclareStrictTypesRector
+
+
+9) app/Models/User.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Models;
+
+ // use Illuminate\Contracts\Auth\MustVerifyEmail;
+@@ Line 15 @@
+ #[Hidden(['password', 'remember_token'])]
+ class User extends Authenticatable
+ {
+-    /** @use HasFactory<UserFactory> */
+-    use HasFactory, Notifiable;
+-
++    use HasFactory;
++    use Notifiable;
+     /**
+      * Get the attributes that should be cast.
+      *
+    ----------- end diff -----------
+
+Applied rules:
+ * SeparateMultiUseImportsRector
+ * DeclareStrictTypesRector
+
+
+10) app/Providers/AppServiceProvider.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Providers;
+
+ use Illuminate\Database\Eloquent\Model;
+    ----------- end diff -----------
+
+Applied rules:
+ * SafeDeclareStrictTypesRector
+
+
+11) app/Queries/PostThreadQuery.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Queries;
+
+ use App\Models\Post;
+@@ Line 9 @@
+ {
+     public function __construct(
+         private Post $post,
+-        private ?Profile $viewer
++        private ?Profile $profile
+     ) {}
+
+-    public static function for(Post $post, ?Profile $viewer): self
++    public static function for(Post $post, ?Profile $profile): self
+     {
+-        return new self($post, $viewer);
++        return new self($post, $profile);
+     }
+
+     public function load(): Post
+     {
+
+-        $viewerId = $this->viewer?->id ?? 0;
++        $viewerId = $this->profile?->id ?? 0;
+
+         $this->post->load([
+             'replies' => fn ($q) => $q
+    ----------- end diff -----------
+
+Applied rules:
+ * RenameParamToMatchTypeRector
+ * RenamePropertyToMatchTypeRector
+ * DeclareStrictTypesRector
+
+
+12) app/Queries/ProfilePageQuery.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Queries;
+
+ use App\Models\Post;
+@@ Line 22 @@
+
+     public function paginate(int $perPage = 20): LengthAwarePaginator
+     {
+-        return $this->baseQuery()->paginate($perPage)->through(fn ($p) => $this->normalize($p));
++        return $this->baseQuery()->paginate($perPage)->through(fn (\App\Models\Post $post): \App\Models\Post => $this->normalize($post));
+     }
+
+     public function get(): Collection
+     {
+-        return $this->baseQuery()->get()->map(fn ($p) => $this->normalize($p));
++        return $this->baseQuery()->get()->map(fn (\App\Models\Post $post): \App\Models\Post => $this->normalize($post));
+     }
+
+     private function baseQuery(): Builder
+@@ Line 34 @@
+     {
+         $viewerId = $this->viewer?->id ?? 0;
+
+-        $posts = Post::where('profile_id', $this->subject->id)
++        return Post::where('profile_id', $this->subject->id)
+             ->whereNull('parent_id')
+             ->with([
+                 'repostOf' => fn ($q) => $q
+@@ Line 49 @@
+                 'repostOf as repost_original' => fn ($q) => $q->whereHas('reposts', fn ($q) => $q->where('profile_id', $viewerId)),
+             ])
+             ->latest();
+-
+-        return $posts;
+     }
+
+     private function normalize(Post $post): Post
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyUselessVariableRector
+ * RenameParamToMatchTypeRector
+ * AddArrowFunctionReturnTypeRector
+ * ObjectParamTypeByMethodCallTypeRector
+ * DeclareStrictTypesRector
+
+
+13) app/Queries/ProfileWithRepliesQuery.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Queries;
+
+ use App\Models\Post;
+@@ Line 25 @@
+         return $this
+             ->baseQuery()
+             ->paginate($perPage)
+-            ->through(fn ($post) => $this->normalize($post));
++            ->through(fn (\App\Models\Post $post): \App\Models\Post => $this->normalize($post));
+     }
+
+     public function get(): Collection
+@@ Line 33 @@
+         return $this
+             ->baseQuery()
+             ->get()
+-            ->map(fn ($post) => $this->normalize($post));
++            ->map(fn (\App\Models\Post $post): \App\Models\Post => $this->normalize($post));
+     }
+
+     private function baseQuery(): Builder
+@@ Line 40 @@
+     {
+         $viewerId = $this->viewer?->id ?? 0;
+
+-        $posts = Post::query()
++        return Post::query()
+             ->where(
+                 fn ($q) => $q
+                     ->whereBelongsTo($this->subject, 'profile')
+@@ Line 71 @@
+                 'repostOf as repost_original' => fn ($q) => $q->whereHas('reposts', fn ($q) => $q->where('profile_id', $viewerId)),
+             ])
+             ->latest();
+-
+-        return $posts;
+     }
+
+     private function normalize(Post $post): Post
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyUselessVariableRector
+ * AddArrowFunctionReturnTypeRector
+ * ObjectParamTypeByMethodCallTypeRector
+ * DeclareStrictTypesRector
+
+
+14) app/Queries/TimelineQuery.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\Queries;
+
+ use App\Models\Post;
+@@ Line 10 @@
+
+ class TimelineQuery
+ {
+-    public function __construct(private Profile $viewer) {}
++    public function __construct(private Profile $profile) {}
+
+-    public static function forViewer(Profile $viewer): self
++    public static function forViewer(Profile $profile): self
+     {
+-        return new self($viewer);
++        return new self($profile);
+     }
+
+     public function paginate(int $perPage = 20): LengthAwarePaginator
+     {
+-        return $this->baseQuery()->paginate($perPage)->through(fn ($p) => $this->normalize($p));
++        return $this->baseQuery()->paginate($perPage)->through(fn (\App\Models\Post $post): \App\Models\Post => $this->normalize($post));
+     }
+
+     public function get(): Collection
+     {
+-        return $this->baseQuery()->get()->map(fn ($p) => $this->normalize($p));
++        return $this->baseQuery()->get()->map(fn (\App\Models\Post $post): \App\Models\Post => $this->normalize($post));
+     }
+
+     private function baseQuery(): Builder
+     {
+-        $followingIds = $this->viewer->followings()
++        $followingIds = $this->profile->followings()
+             ->pluck('following_profile_id')
+-            ->prepend($this->viewer->id);
++            ->prepend($this->profile->id);
+
+-        $posts = Post::whereIn('profile_id', $followingIds)
++        return Post::whereIn('profile_id', $followingIds)
+             ->whereNull('parent_id')
+             ->with([
+                 'profile',
+@@ Line 41 @@
+             ])
+             ->withCount(['replies', 'likes', 'reposts'])
+             ->withExists([
+-                'likes as has_liked' => fn ($q) => $q->where('profile_id', $this->viewer->id),
+-                'reposts as has_reposted' => fn ($q) => $q->where('profile_id', $this->viewer->id),
+-                'repostOf as like_original' => fn ($q) => $q->whereHas('likes', fn ($q) => $q->where('profile_id', $this->viewer->id)),
+-                'repostOf as repost_original' => fn ($q) => $q->whereHas('reposts', fn ($q) => $q->where('profile_id', $this->viewer->id)),
++                'likes as has_liked' => fn ($q) => $q->where('profile_id', $this->profile->id),
++                'reposts as has_reposted' => fn ($q) => $q->where('profile_id', $this->profile->id),
++                'repostOf as like_original' => fn ($q) => $q->whereHas('likes', fn ($q) => $q->where('profile_id', $this->profile->id)),
++                'repostOf as repost_original' => fn ($q) => $q->whereHas('reposts', fn ($q) => $q->where('profile_id', $this->profile->id)),
+             ])->latest();
+-
+-        return $posts;
+     }
+
+     private function normalize(Post $post): Post
+    ----------- end diff -----------
+
+Applied rules:
+ * SimplifyUselessVariableRector
+ * RenameParamToMatchTypeRector
+ * RenamePropertyToMatchTypeRector
+ * AddArrowFunctionReturnTypeRector
+ * ObjectParamTypeByMethodCallTypeRector
+ * DeclareStrictTypesRector
+
+
+15) app/View/Components/ArtistsToFollow.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\View\Components;
+
+ use App\Models\Profile;
+@@ Line 42 @@
+
+         $profiles = $query->inRandomOrder()->limit(4)->get();
+
+-        return view('components.artists-to-follow', compact('profiles'));
++        return view('components.artists-to-follow', ['profiles' => $profiles]);
+     }
+ }
+    ----------- end diff -----------
+
+Applied rules:
+ * CompactToVariablesRector
+ * DeclareStrictTypesRector
+
+
+16) app/View/Components/Layout.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\View\Components;
+
+ use Closure;
+    ----------- end diff -----------
+
+Applied rules:
+ * DeclareStrictTypesRector
+
+
+17) app/View/Components/Post.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\View\Components;
+
+ use App\Models\Post as PostModel;
+@@ Line 9 @@
+
+ class Post extends Component
+ {
+-    private PostModel $orignalPost;
+-
+     /**
+      * Create a new component instance.
+      */
+@@ Line 19 @@
+         public bool $showEngagement = true,
+         public bool $showReplies = false,
+     ) {
+-        $this->orignalPost = $post;
+         $this->post = $post->isRepost() && $post->content == null ? $post->repostOf : $post;
+     }
+    ----------- end diff -----------
+
+Applied rules:
+ * RemoveUnusedPrivatePropertyRector
+ * DeclareStrictTypesRector
+
+
+18) app/View/Components/PostForm.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\View\Components;
+
+ use App\Models\Profile;
+    ----------- end diff -----------
+
+Applied rules:
+ * DeclareStrictTypesRector
+
+
+19) app/View/Components/Reply.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\View\Components;
+
+ use App\Models\Post;
+    ----------- end diff -----------
+
+Applied rules:
+ * DeclareStrictTypesRector
+
+
+20) app/View/Components/ReplyForm.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace App\View\Components;
+
+ use App\Models\Post;
+    ----------- end diff -----------
+
+Applied rules:
+ * DeclareStrictTypesRector
+
+
+21) routes/web.php:6
+
+    ---------- begin diff ----------
+@@ Line 6 @@
+ use Illuminate\Support\Facades\Auth;
+ use Illuminate\Support\Facades\Route;
+
+-Route::get('/', function () {
++Route::get('/', function (): \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View {
+     return view('welcome');
+ });
+
+@@ Line 22 @@
+         return redirect()->intended(route('profiles.show', $user->profile));
+     })->name('login');
+
+-    Route::get('/dev/logout', function () {
++    Route::get('/dev/logout', function (): \Illuminate\Routing\Redirector|\Illuminate\Http\RedirectResponse {
+         Auth::logout();
+         request()->session()->invalidate();
+         request()->session()->regenerateToken();
+    ----------- end diff -----------
+
+Applied rules:
+ * ClosureReturnTypeRector
+
+
+22) tests/Feature/FollowBehaviorTest.php:9
+
+    ---------- begin diff ----------
+@@ Line 9 @@
+ test('profile cannot follow itself', function () {
+     $profile = Profile::factory()->create();
+
+-    expect(fn () => Follow::createFollow($profile, $profile))
++    expect(fn (): \App\Models\Follow => Follow::createFollow($profile, $profile))
+         ->toThrow(InvalidArgumentException::class, 'A profile cannot follow itself');
+ });
+    ----------- end diff -----------
+
+Applied rules:
+ * AddArrowFunctionReturnTypeRector
+
+
+23) tests/Feature/PostBehaviorTest.php:37
+
+    ---------- begin diff ----------
+@@ Line 37 @@
+     $originalPost = Post::factory()->create();
+     $replier = Profile::factory()->create();
+     $reply = Post::reply($replier, $originalPost, 'Hello, world!');
+-    $replyToReply = Post::reply($reply->profile, $reply, 'Hello, world!');
++    $post = Post::reply($reply->profile, $reply, 'Hello, world!');
+
+-    expect($replyToReply->parent->is($reply))->toBeTrue()
++    expect($post->parent->is($reply))->toBeTrue()
+         ->and($reply->parent->is($originalPost))->toBeTrue()
+         ->and($originalPost->replies)->toHaveCount(1);
+     expect($reply->parent->is($originalPost))->toBeTrue()
+@@ Line 77 @@
+ test('prevent duplicate reposts', function () {
+     $originalPost = Post::factory()->create();
+     $reposter = Profile::factory()->create();
+-    $repost1 = Post::repost($reposter, $originalPost);
++    $post = Post::repost($reposter, $originalPost);
+     $repost2 = Post::repost($reposter, $originalPost);
+
+-    expect($repost1->exists)->toBeTrue()
++    expect($post->exists)->toBeTrue()
+         ->and($repost2->exists)->toBeTrue()
+-        ->and($repost1->is($repost2))->toBeTrue();
++        ->and($post->is($repost2))->toBeTrue();
+ });
+
+ test('remove a repost', function () {
+    ----------- end diff -----------
+
+Applied rules:
+ * RenameVariableToMatchMethodCallReturnTypeRector
+
+
+24) tests/Pest.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ use Illuminate\Foundation\Testing\RefreshDatabase;
+ use Tests\TestCase;
+
+@@ Line 44 @@
+ |
+ */
+
+-function something()
++function something(): void
+ {
+     // ..
+ }
+    ----------- end diff -----------
+
+Applied rules:
+ * AddFunctionVoidReturnTypeWhereNoReturnRector
+ * SafeDeclareStrictTypesRector
+
+
+25) tests/TestCase.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ namespace Tests;
+
+ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+    ----------- end diff -----------
+
+Applied rules:
+ * SafeDeclareStrictTypesRector
+
+
+26) tests/Unit/ExampleTest.php:1
+
+    ---------- begin diff ----------
+@@ Line 1 @@
+ <?php
+
++declare(strict_types=1);
++
+ test('that true is true', function () {
+     expect(true)->toBeTrue();
+ });
+    ----------- end diff -----------
+
+Applied rules:
+ * SafeDeclareStrictTypesRector
+
+
+ [OK] 26 files have been changed by Rector
+
+> php vendor/bin/pint
+
+  .✓✓.....✓..✓✓✓.....................................✓.✓.✓.....
+
+  ───────────────────────────────────────────────────────────────────────────────────────────────────────── Laravel
+    FIXED   ........................................................................ 61 files, 9 style issues fixed
+  ✓ app\Http\Controllers\PostController.php fully_qualified_strict_types, unary_operator_spaces, not_operator_with…
+  ✓ app\Http\Controllers\ProfileController.php                        fully_qualified_strict_types, ordered_imports
+  ✓ app\Models\User.php                                              class_attributes_separation, no_unused_imports
+  ✓ app\Queries\ProfilePageQuery.php          fully_qualified_strict_types, braces_position, single_line_empty_body
+  ✓ app\Queries\ProfileWithRepliesQuery.php   fully_qualified_strict_types, braces_position, single_line_empty_body
+  ✓ app\Queries\TimelineQuery.php             fully_qualified_strict_types, braces_position, single_line_empty_body
+  ✓ rector.php                                                                                         concat_space
+  ✓ routes\web.php                                                    fully_qualified_strict_types, ordered_imports
+  ✓ tests\Feature\FollowBehaviorTest.php                                               fully_qualified_strict_types

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Queries;
 
 use App\Models\Post;
@@ -14,6 +16,7 @@ class ProfileWithRepliesQuery
         private Profile $subject,
         private ?Profile $viewer, // null if not logged in
     ) {}
+
     public static function for(Profile $subject, ?Profile $viewer): self
     {
         return new self($subject, $viewer);
@@ -24,7 +27,7 @@ class ProfileWithRepliesQuery
         return $this
             ->baseQuery()
             ->paginate($perPage)
-            ->through(fn($post) => $this->normalize($post));
+            ->through(fn (Post $post): Post => $this->normalize($post));
     }
 
     public function get(): Collection
@@ -32,48 +35,44 @@ class ProfileWithRepliesQuery
         return $this
             ->baseQuery()
             ->get()
-            ->map(fn($post) => $this->normalize($post));
+            ->map(fn (Post $post): Post => $this->normalize($post));
     }
 
     private function baseQuery(): Builder
     {
         $viewerId = $this->viewer?->id ?? 0;
 
-        $posts = Post::query()
+        return Post::query()
             ->where(
-                fn($q) => $q
+                fn ($q) => $q
                     ->whereBelongsTo($this->subject, 'profile')
                     ->whereNull('parent_id')
             )
             ->orWhereHas(
                 'replies',
-                fn($q) => $q
+                fn ($q) => $q
                     ->whereBelongsTo($this->subject, 'profile')
             )
             ->with([
                 'profile',
-                'repostOf' => fn($q) => $q
+                'repostOf' => fn ($q) => $q
                     ->withCount(['likes', 'reposts', 'replies'])
                     ->with('profile'),
                 'repostOf.profile',
                 'parent.profile',
-                'replies' => fn($q) => $q
+                'replies' => fn ($q) => $q
                     ->whereBelongsTo($this->subject, 'profile')
                     ->with('profile')
-                    ->oldest()
+                    ->oldest(),
             ])
             ->withCount(['likes', 'reposts', 'replies'])
             ->withExists([
-                'likes as has_liked' => fn($q) => $q->where('profile_id', $viewerId),
-                'reposts as has_reposted' => fn($q) => $q->where('profile_id', $viewerId),
-                'repostOf as like_original' => fn($q) =>
-                $q->whereHas('likes', fn($q) => $q->where('profile_id', $viewerId)),
-                'repostOf as repost_original' => fn($q) =>
-                $q->whereHas('reposts', fn($q) => $q->where('profile_id', $viewerId)),
+                'likes as has_liked' => fn ($q) => $q->where('profile_id', $viewerId),
+                'reposts as has_reposted' => fn ($q) => $q->where('profile_id', $viewerId),
+                'repostOf as like_original' => fn ($q) => $q->whereHas('likes', fn ($q) => $q->where('profile_id', $viewerId)),
+                'repostOf as repost_original' => fn ($q) => $q->whereHas('reposts', fn ($q) => $q->where('profile_id', $viewerId)),
             ])
             ->latest();
-
-        return $posts;
     }
 
     private function normalize(Post $post): Post

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\View\Components;
 
 use App\Models\Post;
@@ -12,6 +14,7 @@ use Illuminate\View\Component;
 class ReplyForm extends Component
 {
     public Profile $profile;
+
     /**
      * Create a new component instance.
      */

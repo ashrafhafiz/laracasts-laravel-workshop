@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\View\Components;
 
 use App\Models\Post as PostModel;
@@ -9,7 +11,6 @@ use Illuminate\View\Component;
 
 class Post extends Component
 {
-    private PostModel $orignalPost;
     /**
      * Create a new component instance.
      */
@@ -18,7 +19,6 @@ class Post extends Component
         public bool $showEngagement = true,
         public bool $showReplies = false,
     ) {
-        $this->orignalPost = $post;
         $this->post = $post->isRepost() && $post->content == null ? $post->repostOf : $post;
     }
 
