@@ -1,0 +1,47 @@
+<?php
+
+use App\Models\Like;
+use App\Models\Post;
+use App\Models\Profile;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+test('can like a post', function () {
+    $profile = Profile::factory()->create();
+    $post = Post::factory()->create();
+
+    $like = Like::createLike($profile, $post);
+
+    expect($post->likes)->toHaveCount(1)
+        ->and($profile->likes)->toHaveCount(1)
+        ->and($profile->likes->contains($like))->toBeTrue()
+        ->and($post->likes()->first()->profile_id)->toBe($profile->id)
+        ->and($like->post->is($post))->toBeTrue()
+        ->and($like->profile->is($profile))->toBeTrue();
+});
+
+test('cannot create duplicate likes', function () {
+    $profile = Profile::factory()->create();
+    $post = Post::factory()->create();
+
+    $like1 = Like::createLike($profile, $post);
+    $like2 = Like::createLike($profile, $post);
+
+    expect($like1->id)->toBe($like2->id);
+});
+
+test('can remove a like', function () {
+    $profile = Profile::factory()->create();
+    $post = Post::factory()->create();
+
+    $like = Like::createLike($profile, $post);
+
+    $success = Like::removeLike($profile, $post);
+
+    expect($post->likes)->toHaveCount(0)
+        ->and($profile->likes->contains($like))->toBeFalse()
+        ->and($profile->likes)->toHaveCount(0)
+        ->and($post->likes->contains($like))->toBeFalse()
+        ->and($success)->toBeTrue();
+});
